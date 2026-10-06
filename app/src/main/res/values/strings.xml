@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StorePOS Terminal Launcher</string>
+    <string name="device_admin_label">StorePOS Terminal Administrator</string>
+    <string name="device_admin_description">Allows StorePOS Terminal Launcher to control dedicated-device kiosk mode when provisioned as Device Owner.</string>
+</resources>
