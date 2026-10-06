@@ -39,7 +39,7 @@ object KioskController {
         context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    fun applyKiosk(activity: Activity, enabled: Boolean): Boolean {
+    fun applyKiosk(activity: Activity, enabled: Boolean, hideEscapeApps: Boolean = true): Boolean {
         val dpm = manager(activity)
         if (!dpm.isDeviceOwnerApp(activity.packageName)) return false
         val admin = adminComponent(activity)
@@ -71,7 +71,8 @@ object KioskController {
                     ComponentName(activity, MainActivity::class.java)
                 )
             }
-            setEscapeAppsHidden(activity, dpm, admin, true)
+
+            setEscapeAppsHidden(activity, hideEscapeApps)
 
             if (dpm.isLockTaskPermitted(activity.packageName)) {
                 runCatching { activity.startLockTask() }
@@ -86,22 +87,24 @@ object KioskController {
             runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_FACTORY_RESET) }
             runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_ADD_USER) }
             runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_MOUNT_PHYSICAL_MEDIA) }
-            setEscapeAppsHidden(activity, dpm, admin, false)
+            setEscapeAppsHidden(activity, false)
         }
         return true
     }
 
-    private fun setEscapeAppsHidden(
-        context: Context,
-        dpm: DevicePolicyManager,
-        admin: ComponentName,
-        hidden: Boolean
-    ) {
-        listOf("com.android.vending", "com.android.chrome", "com.google.android.apps.chrome", "org.mozilla.firefox")
-            .forEach { pkg ->
-                if (runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess) {
-                    runCatching { dpm.setApplicationHidden(admin, pkg, hidden) }
-                }
-            }
+    fun setEscapeAppsHidden(context: Context, hidden: Boolean) {
+        val dpm = manager(context)
+        if (!dpm.isDeviceOwnerApp(context.packageName)) return
+        val admin = adminComponent(context)
+
+        listOf(
+            "com.android.vending",
+            "com.android.chrome",
+            "com.google.android.apps.chrome",
+            "org.mozilla.firefox"
+        ).forEach { pkg ->
+            val installed = runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
+            if (installed) runCatching { dpm.setApplicationHidden(admin, pkg, hidden) }
+        }
     }
 }
